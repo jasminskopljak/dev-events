@@ -6,11 +6,9 @@
 // stores the connection state on the Node.js global object so that subsequent
 // imports reuse the same connection.
 
-import mongoose, { type ConnectOptions, type Mongoose } from "mongoose";
+import mongoose, {type ConnectOptions, type Mongoose} from "mongoose";
 
 const MONGODB_URI: string | undefined = process.env.MONGODB_URI;
-if (!MONGODB_URI) throw new Error('Missing required environment variable: "MONGODB_URI"');
-const MONGODB_URI_STRING: string = MONGODB_URI;
 
 // Type for the cached connection object stored on globalThis.
 type MongooseCache = {
@@ -24,7 +22,7 @@ declare global {
   var mongooseCache: MongooseCache | undefined;
 }
 
-// Initialize the cache on first import. Reuse across HMR reloads in development.
+// Initialize the cache on the first import. Reuse across HMR reloads in development.
 const cached: MongooseCache = globalThis.mongooseCache ?? { conn: null, promise: null };
 globalThis.mongooseCache = cached;
 
@@ -41,12 +39,13 @@ const options: ConnectOptions = {
  * - On connection failure, the cached promise is cleared so future calls can retry.
  */
 export async function connectToDatabase(): Promise<Mongoose> {
-  // Return existing connection if ready.
+  // Return an existing connection if ready.
   if (cached.conn) return cached.conn;
 
   // If there's no in-flight promise, start a new connection attempt.
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI_STRING, options);
+    if (!MONGODB_URI) throw new Error('Missing required environment variable: "MONGODB_URI"');
+    cached.promise = mongoose.connect(MONGODB_URI, options);
   }
 
   try {
